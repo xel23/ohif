@@ -23,5 +23,9 @@
   },
   "peerDependencies": {
     "cornerstone-tools": "^4.8.1"
+  },
+  "dependencies": {
+    "paper": "^0.12.3",
+    "yarn": "^1.21.1"
   }
 }

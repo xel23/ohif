@@ -14,6 +14,7 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     });
     this.touchDragCallback = this._paint.bind(this);
     this.eraseFlag = false;
+    window.addEventListener('keydown', this.handleWheel.bind(this));
   }
 
   _paint(evt) {
@@ -26,10 +27,7 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
       return;
     }
 
-    const radius =
-        this.eraseFlag === true
-            ? configuration.radius * 1.5
-            : configuration.radius;
+    const radius = configuration.radius;
     const pointerArray = getCircle(radius, rows, columns, x, y);
 
     const {
@@ -46,6 +44,16 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     );
     window.cornerstone.updateImage(evt.detail.element);
   }
+
+  handleWheel(event) {
+    let { configuration } = segmentationModule;
+    if (event.ctrlKey) {
+      configuration.radius += configuration.radius > 50 ? 0 : 1;
+    }
+    if (event.altKey) {
+      configuration.radius -= configuration.radius < 4 ? 0 : 1;
+    }
+  };
 
   renderBrush(evt) {
     const { getters, configuration } = segmentationModule;
