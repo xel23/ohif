@@ -4,6 +4,7 @@ const BaseBrushTool = csTools.importInternal('base/BaseBrushTool');
 const segmentationModule = csTools.getModule('segmentation');
 const getCircle = csTools.importInternal('util/segmentationUtils').getCircle;
 const drawBrushPixels = csTools.importInternal('util/segmentationUtils').drawBrushPixels;
+const addToolState = csTools.addToolState;
 
 export default class HelloWorldMouseTool extends BaseBrushTool {
   constructor(name = 'HelloWorldMouse') {
@@ -13,7 +14,7 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
       configuration: {},
     });
     this.touchDragCallback = this._paint.bind(this);
-    this.eraseFlag = false;
+    this.shouldErase = false;
   }
 
   _paint(evt) {
@@ -27,7 +28,7 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     }
 
     const radius =
-        this.eraseFlag === true
+        this.shouldErase === true
             ? configuration.radius * 1.5
             : configuration.radius;
     const pointerArray = getCircle(radius, rows, columns, x, y);
@@ -42,7 +43,7 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
         labelmap2D.pixelData,
         labelmap3D.activeSegmentIndex,
         columns,
-        this.eraseFlag
+        this.shouldErase
     );
     window.cornerstone.updateImage(evt.detail.element);
   }
@@ -74,7 +75,6 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
       return;
     }
 
-    // Draw the hover overlay on top of the pixel data
     const radius = configuration.radius;
     const context = eventData.canvasContext;
     const element = eventData.element;
@@ -89,16 +89,12 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     );
 
     const { labelmap2D } = getters.labelmap2D(element);
-    const pointerArray = getCircle(radius, rows, columns, x, y);
 
     const getPixelIndex = (x, y) => y * columns + x;
-    let flag = 1;
-    pointerArray.forEach(point => {
-      const spIndex = getPixelIndex(...point);
-      flag *= labelmap2D.pixelData[spIndex];
-    });
-    circleRadius = flag !== 0 ? circleRadius : circleRadius * 1.5;
-    this.eraseFlag = flag === 0;
+    const spIndex = getPixelIndex(Math.floor(x), Math.floor(y));
+    const isInside = labelmap2D.pixelData[spIndex] === 1;
+    circleRadius = isInside? circleRadius : circleRadius * 1.5;
+    this.shouldErase = !isInside;
     context.beginPath();
     context.strokeStyle = color;
     context.ellipse(
