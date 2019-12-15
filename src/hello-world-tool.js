@@ -13,8 +13,8 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
       configuration: {},
     });
     this.touchDragCallback = this._paint.bind(this);
-    this.eraseFlag = false;
     window.addEventListener('keydown', this.handleWheel.bind(this));
+    this.shouldErase = false;
   }
 
   _paint(evt) {
@@ -40,18 +40,20 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
         labelmap2D.pixelData,
         labelmap3D.activeSegmentIndex,
         columns,
-        this.eraseFlag
+        this.shouldErase
     );
     window.cornerstone.updateImage(evt.detail.element);
   }
 
   handleWheel(event) {
-    let { configuration } = segmentationModule;
+    let { configuration, setters } = segmentationModule;
     if (event.ctrlKey) {
       configuration.radius += configuration.radius > 50 ? 0 : 1;
+      setters.radius(configuration.radius);
     }
     if (event.altKey) {
       configuration.radius -= configuration.radius < 4 ? 0 : 1;
+      setters.radius(configuration.radius);
     }
   };
 
@@ -82,7 +84,6 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
       return;
     }
 
-    // Draw the hover overlay on top of the pixel data
     const radius = configuration.radius;
     const context = eventData.canvasContext;
     const element = eventData.element;
@@ -97,16 +98,11 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     );
 
     const { labelmap2D } = getters.labelmap2D(element);
-    const pointerArray = getCircle(radius, rows, columns, x, y);
 
     const getPixelIndex = (x, y) => y * columns + x;
-    let flag = 1;
-    pointerArray.forEach(point => {
-      const spIndex = getPixelIndex(...point);
-      flag *= labelmap2D.pixelData[spIndex];
-    });
-    circleRadius = flag !== 0 ? circleRadius : circleRadius * 1.5;
-    this.eraseFlag = flag === 0;
+    const spIndex = getPixelIndex(Math.floor(x), Math.floor(y));
+    const isInside = labelmap2D.pixelData[spIndex] === 1;
+    this.shouldErase = !isInside;
     context.beginPath();
     context.strokeStyle = color;
     context.ellipse(
