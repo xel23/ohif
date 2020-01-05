@@ -5,16 +5,18 @@ const segmentationModule = csTools.getModule('segmentation');
 const getCircle = csTools.importInternal('util/segmentationUtils').getCircle;
 const drawBrushPixels = csTools.importInternal('util/segmentationUtils').drawBrushPixels;
 
-export default class HelloWorldMouseTool extends BaseBrushTool {
-  constructor(name = 'HelloWorldMouse') {
+export default class ContourBrushTool extends BaseBrushTool {
+  constructor(name = 'ContourBrush') {
     super({
       name,
       supportedInteractionTypes: ['Mouse', 'Touch'],
       configuration: {},
     });
     this.touchDragCallback = this._paint.bind(this);
-    window.addEventListener('keydown', this.handleWheel.bind(this));
+    window.addEventListener('keydown', this.handleKeys.bind(this));
     this.shouldErase = false;
+    this.hasContour = false;
+    this.mouseClickCallback = this._checkContourPresence.bind(this);
   }
 
   _paint(evt) {
@@ -40,12 +42,12 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
         labelmap2D.pixelData,
         labelmap3D.activeSegmentIndex,
         columns,
-        this.shouldErase
+        this.shouldErase && this.hasContour
     );
     window.cornerstone.updateImage(evt.detail.element);
   }
 
-  handleWheel(event) {
+  handleKeys(event) {
     let { configuration, setters } = segmentationModule;
     if (event.ctrlKey) {
       configuration.radius += configuration.radius > 50 ? 0 : 1;
@@ -98,7 +100,6 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     );
 
     const { labelmap2D } = getters.labelmap2D(element);
-
     const getPixelIndex = (x, y) => y * columns + x;
     const spIndex = getPixelIndex(Math.floor(x), Math.floor(y));
     const isInside = labelmap2D.pixelData[spIndex] === 1;
@@ -117,5 +118,19 @@ export default class HelloWorldMouseTool extends BaseBrushTool {
     context.stroke();
 
     this._lastImageCoords = eventData.image;
+  }
+
+  _checkContourPresence(evt) {
+    const element = evt.detail.element;
+    const { getters } = segmentationModule;
+    const { labelmap2D } = getters.labelmap2D(element);
+    for (let i = 0; i < labelmap2D.pixelData.length; i++) {
+      if (labelmap2D.pixelData[i] === 1) {
+        this.hasContour = true;
+        break;
+      } else {
+        this.hasContour = false;
+      }
+    }
   }
 }
