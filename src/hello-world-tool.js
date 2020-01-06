@@ -16,7 +16,7 @@ export default class ContourBrushTool extends BaseBrushTool {
     window.addEventListener('keydown', this.handleKeys.bind(this));
     this.shouldErase = false;
     this.hasContour = false;
-    this.mouseClickCallback = this._checkContourPresence.bind(this);
+    this.preMouseDownCallback = this._checkContourPresence.bind(this);
   }
 
   _paint(evt) {
@@ -121,6 +121,7 @@ export default class ContourBrushTool extends BaseBrushTool {
   }
 
   _checkContourPresence(evt) {
+    super.preMouseDownCallback(evt);
     const element = evt.detail.element;
     const { getters } = segmentationModule;
     const { labelmap2D } = getters.labelmap2D(element);
